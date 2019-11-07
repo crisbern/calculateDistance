@@ -20,5 +20,5 @@ We want to invite any customer within 100km of our Dublin office for some food a
 
 
 ## Run unit tests
-
+```npm install -g elm-test```
 ```elm-test init```
