@@ -1,5 +1,6 @@
-module PointUtil exposing (RadiantPoint, GPSPoint, toRadiantPoint, validateLatitude, validateLongitude)
+module PointUtil exposing (..)
 
+-- MODEL
 type alias RadiantPoint =
   { latitude: Float
   , longitude: Float
@@ -16,34 +17,48 @@ toRadiantPoint point =  {
   , longitude= degrees point.longitude
   }
 
+-- VALIDATE
+
 validateLatitude: String -> Float
 validateLatitude latitude = 
-        case (String.toFloat latitude) of
-            Nothing ->
-                0
-            Just existingLatitude ->
-                if  existingLatitude < -90
+    case (String.toFloat latitude) of
+        Nothing ->
+            0
+        Just existingLatitude ->
+            if  existingLatitude < -90
+            then
+                -90
+            else 
+                if existingLatitude >90 
                 then
-                    -90
+                    90
                 else 
-                    if existingLatitude >90 
-                    then
-                        90
-                    else 
-                        existingLatitude
+                    existingLatitude
 
 validateLongitude: String -> Float
 validateLongitude longitude = 
-        case (String.toFloat longitude) of
-            Nothing ->
-                0
-            Just existingLongitude ->
-                if  existingLongitude < -180
+    case (String.toFloat longitude) of
+        Nothing ->
+            0
+        Just existingLongitude ->
+            if  existingLongitude < -180
+            then
+                -180
+            else 
+                if existingLongitude >180 
                 then
-                    -180
+                    180
                 else 
-                    if existingLongitude >180 
-                    then
-                        180
-                    else 
-                        existingLongitude                        
+                    existingLongitude     
+
+validateDistance: String -> Float
+validateDistance distance = 
+    case (String.toFloat distance) of
+        Nothing ->
+            0
+        Just existingDistance ->
+            if existingDistance >= 0 
+            then
+                existingDistance
+            else
+                0

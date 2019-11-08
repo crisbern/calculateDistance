@@ -9,7 +9,7 @@ import Html.Events exposing (..)
 import Json.Decode as D
 import Task exposing (Task)
 
-import PointUtil exposing (GPSPoint, validateLatitude, validateLongitude)
+import PointUtil exposing (..)
 import GreatCircleDistance exposing (earthCircleDistance)
 
 -- MAIN
@@ -24,10 +24,8 @@ main =
     }
 
 
-
 -- MODEL
 -- model shape (similar to state in React)
-
 type alias Model =
   { 
     customers : List Customer
@@ -60,10 +58,8 @@ init _ =
     }, Cmd.none) -- initial values no customers, 100km, Intercom GPS
 
 
-
 -- UPDATE
 -- what happens when something changes
-
 type Msg
   = Pick
   | GotFiles File (List File)
@@ -83,35 +79,22 @@ update msg model =
       )
 
     Distance distance -> (  
-        (   
-        case (String.toFloat distance) of
-            Nothing ->
-                {model | distance = 0}
-            Just existingDistance ->
-                if existingDistance >= 0 
-                then
-                    {model | distance = existingDistance}
-                else
-                    model
-        )
+      {model | distance = validateDistance distance}
       , Cmd.none
       )
      
-
     Latitude latitude->( 
       { model | point = {latitude = validateLatitude latitude, longitude = model.point.longitude} }
       , Cmd.none
       )
 
     Longitude longitude -> (
-        (   
-          { model | point = {latitude = model.point.latitude, longitude = validateLongitude longitude} }  
-        )
+      { model | point = {latitude = model.point.latitude, longitude = validateLongitude longitude} }  
       , Cmd.none
       )
       
     GotFiles file files -> -- when files are selected
-      ( {model|customers = [], decodeErrors = 0} 
+      ( {model| customers = [], decodeErrors = 0} 
       , Task.perform GotData <| Task.sequence <|
           List.map File.toString (file :: files)
       )
@@ -126,18 +109,10 @@ update msg model =
               }
       } :: model.customers)}, Cmd.none )
 
-    GotResult (Err error)  -> ( {model|decodeErrors = model.decodeErrors + 1, customers = ({
-      name=D.errorToString error
-      , id=0
-      , point={
-          latitude=0
-        , longitude=0
-      }} :: model.customers)}, Cmd.none )
+    GotResult (Err error)  -> ( {model|decodeErrors = model.decodeErrors + 1}, Cmd.none )
 
-    
     GotData content -> -- when files are processed
       (model, Cmd.batch (List.map decodeCustomer (List.concat (List.map  (String.lines) content ))))
-    
 
 
 -- SUBSCRIPTIONS
@@ -161,7 +136,7 @@ customerDecoder  =  D.map4 DirtyCustomer
     (D.at ["user_id"] D.int) 
     (D.at ["name"] D.string) 
 
-
+-- filter
 filterCustomersByDistance: GPSPoint -> Float -> List Customer -> List Customer
 filterCustomersByDistance  startingPoint distance customerData =
     let 
@@ -171,6 +146,7 @@ filterCustomersByDistance  startingPoint distance customerData =
     customerData
     |> List.filter isWithinRange
     |> List.sortBy .id
+
 
 -- VIEW
 
