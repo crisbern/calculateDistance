@@ -10,6 +10,7 @@ import Json.Decode as D
 import Task exposing (Task)
 
 import PointUtil exposing (GPSPoint, validateLatitude, validateLongitude)
+import GreatCircleDistance exposing (earthCircleDistance)
 
 -- MAIN
 -- this is where everything starts
@@ -42,6 +43,8 @@ type alias Customer =
   , name: String
   }
 
+-- DirtyCustomer is needed because lat/lon are string in the API
+-- They could be Float and there would not be need of parsing
 type alias DirtyCustomer = 
   { latitude: String
   , longitude: String
@@ -158,6 +161,17 @@ customerDecoder  =  D.map4 DirtyCustomer
     (D.at ["user_id"] D.int) 
     (D.at ["name"] D.string) 
 
+
+filterCustomersByDistance: GPSPoint -> Float -> List Customer -> List Customer
+filterCustomersByDistance  startingPoint distance customerData =
+    let 
+        isWithinRange: Customer -> Bool
+        isWithinRange customer = (earthCircleDistance startingPoint customer.point)  <= distance
+    in
+    customerData
+    |> List.filter isWithinRange
+    |> List.sortBy .id
+
 -- VIEW
 
 view : Model -> Html Msg
@@ -172,7 +186,7 @@ view model =
     , div [] [text (String.fromInt model.decodeErrors)]
     , ul
         []
-        (List.map viewCustomers model.customers)
+        (List.map viewCustomers (filterCustomersByDistance model.point model.distance model.customers))
     ]  
 
 viewCustomers : Customer -> Html msg
