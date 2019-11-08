@@ -10,15 +10,16 @@ We want to invite any customer within 100km of our Dublin office for some food a
  A text file with names and user ids of customers within 100km, sorted by user ids ascending.
 
 ## How to run this code
+https://guide.elm-lang.org/install/elm.html
 
 ### From a browser (production code)
 
 ### From a browser (development environment)
 ```elm reactor```
 
-### From command line
-
+http://localhost:8000/src/Main.elm
 
 ## Run unit tests
+Explain here why not too many tests
 ```npm install -g elm-test```
 ```elm-test init```
