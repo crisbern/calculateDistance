@@ -11,6 +11,12 @@ import Task exposing (Task)
 
 import PointUtil exposing (..)
 import GreatCircleDistance exposing (earthCircleDistance)
+import Bootstrap.Form as Form
+import Bootstrap.Form.Input as Input
+import Bootstrap.Form.Fieldset as Fieldset
+import Bootstrap.Button as Button
+import Bootstrap.Alert as Alert
+
 
 -- MAIN
 -- this is where everything starts
@@ -29,6 +35,7 @@ main =
 type alias Model =
   { 
     customers : List Customer
+  , fileLoaded: Bool
   , decodeErrors: Int
   , distance: Float
   , point: GPSPoint
@@ -52,7 +59,7 @@ type alias DirtyCustomer =
 
 init : () -> (Model, Cmd Msg)
 init _ =
-  (Model [] 0 100 {
+  (Model [] False 0 100 {
       latitude= 53.339428
     , longitude=-6.257664
     }, Cmd.none) -- initial values no customers, 100km, Intercom GPS
@@ -74,7 +81,7 @@ update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     Pick -> -- when the select file is pressed
-      ( model
+      ( {model | fileLoaded = False}
       , Select.files ["text/*"] GotFiles
       )
 
@@ -94,13 +101,13 @@ update msg model =
       )
       
     GotFiles file files -> -- when files are selected
-      ( {model| customers = [], decodeErrors = 0} 
+      ( {model| customers = [], decodeErrors = 0, fileLoaded = True} 
       , Task.perform GotData <| Task.sequence <|
           List.map File.toString (file :: files)
       )
 
     GotResult (Ok dirtyCustomer) -> -- when json is processed
-      ( {model|customers = ({
+      ( {model|customers = ({ -- transform dirtyCustomer in customer
         name=dirtyCustomer.name
       , id=dirtyCustomer.user_id
       , point={
@@ -153,16 +160,53 @@ filterCustomersByDistance  startingPoint distance customerData =
 view : Model -> Html Msg
 view model =
   div
-    [ ]
+    [ style "max-width" "50em", style "margin" "auto"]
     [  
-      input [  type_ "number", placeholder "Max distance", value (String.fromFloat model.distance), onInput Distance][]
-    , input [  type_ "number", placeholder "Latitude", value (String.fromFloat model.point.latitude), onInput Latitude][]
-    , input [  type_ "number", placeholder "Logitude", value (String.fromFloat model.point.longitude), onInput Longitude][]
-    , button [ onClick Pick ] [ text "Upload Customers file" ]
-    , div [] [text (String.fromInt model.decodeErrors)]
-    , ul
-        []
-        (List.map viewCustomers (filterCustomersByDistance model.point model.distance model.customers))
+      h1 [] [ text "Welcome to the customer filter by distance"]
+    , if model.fileLoaded 
+        then 
+          div [] []
+        else 
+          Alert.simpleInfo [] [text "Please select a file"] 
+    , Form.group []
+        [ Form.label [for "distance"] [ text "Max istance in km"]
+        , Input.number [ Input.id "distance", Input.value (String.fromFloat model.distance), Input.attrs [ onInput Distance ]  ]
+        ]
+    , Form.group []
+        [ Form.label [for "latitude"] [ text "Starting point latitude"]
+        , Input.number [ Input.id "latitude", Input.value (String.fromFloat model.point.latitude), Input.attrs [ onInput Latitude ]  ]
+        , Form.label [for "longitude"] [ text "Starting point longitude"]
+        , Input.number [ Input.id "longitude", Input.value (String.fromFloat model.point.longitude), Input.attrs [ onInput Longitude ]  ]
+        ]
+    , Button.button [ Button.primary,  Button.attrs [ onClick Pick ]] [ text "Upload Customers file"  ]
+    , if model.decodeErrors == 0 
+        then if model.fileLoaded 
+          then 
+            Alert.simpleLight [] [ text (String.fromInt (List.length model.customers) ++ " customers in the database")]
+          else
+            div [] []
+        else  
+          Alert.simpleDanger [] [text ("There are " ++ String.fromInt model.decodeErrors ++ " errors in your uploaded file, leaving " ++ String.fromInt (List.length model.customers) ++ " customers in the database")]
+    , let
+        filteredCustomers: List Customer
+        filteredCustomers = (filterCustomersByDistance model.point model.distance model.customers)
+      in
+        if List.length filteredCustomers > 0
+        then 
+        div [] [ 
+          Alert.simpleSuccess [] [
+            text (String.fromInt (List.length filteredCustomers) ++ " customers within range")
+            
+          ] 
+        , ul
+          []
+          (List.map viewCustomers filteredCustomers)
+        ]
+        else if model.fileLoaded 
+        then 
+          Alert.simpleWarning [] [text "No customers within range"] 
+        else 
+          div [] []
     ]  
 
 viewCustomers : Customer -> Html msg
@@ -170,3 +214,4 @@ viewCustomers customer =
   li
     []
     [text customer.name]
+
