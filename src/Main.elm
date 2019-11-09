@@ -3,10 +3,12 @@ module Main exposing (..)
 import Browser
 import File exposing (File)
 import File.Select as Select
+import File.Download as Download
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Json.Decode as D
+import Json.Encode as E
 import Task exposing (Task)
 
 import PointUtil exposing (..)
@@ -75,6 +77,7 @@ type Msg
   | Distance String
   | Latitude String
   | Longitude String
+  | DownloadResults (List Customer)
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -121,6 +124,23 @@ update msg model =
     GotData content -> -- when files are processed
       (model, Cmd.batch (List.map decodeCustomer (List.concat (List.map  (String.lines) content ))))
 
+    DownloadResults filteredCustomers->
+      (model, Download.string "output.txt" "text/plain" ( String.join "\n" (encodeCustomers filteredCustomers)))
+
+encodeCustomers : List Customer -> List String
+encodeCustomers customers = List.map encodeCustomer customers
+
+encodeCustomer : Customer -> String
+encodeCustomer customer =
+    E.encode 0 (customerToEncoder customer)
+
+customerToEncoder: Customer -> E.Value
+customerToEncoder customer = E.object
+        [ ( "latitude", E.string (String.fromFloat customer.point.latitude ))
+        , ( "user_id", E.int customer.id )
+        , ( "name", E.string customer.name )
+        , ( "longitude", E.string (String.fromFloat customer.point.longitude ))
+        ]
 
 -- SUBSCRIPTIONS
 
@@ -153,7 +173,6 @@ filterCustomersByDistance  startingPoint distance customerData =
     customerData
     |> List.filter isWithinRange
     |> List.sortBy .id
-
 
 -- VIEW
 
@@ -196,7 +215,7 @@ view model =
         div [] [ 
           Alert.simpleSuccess [] [
             text (String.fromInt (List.length filteredCustomers) ++ " customers within range")
-            
+            , Button.button [ Button.light,  Button.attrs [ onClick (DownloadResults filteredCustomers) ]] [ text "Download results"  ]
           ] 
         , ul
           []
