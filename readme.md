@@ -9,6 +9,8 @@ We want to invite any customer within 100km of our Dublin office for some food a
 ### Output 
  A text file with names and user ids of customers within 100km, sorted by user ids ascending.
 
+An output generated with the default settings is [output.txt](./output.txt)
+
 ## Action loop
 In the graph there is the abstract state machine.
 As Elm uses reactive programming any changes from init are user actions that trigger an update of the view.
@@ -28,6 +30,8 @@ From the main project folder run
 It will create a index.html file follow the instructions under the Embedding header to add the Bootstrap CSS http://elm-bootstrap.info/getting-started
 
 You can move the file and deploy it on a static webserver
+
+*Note:* a compiled [index.html](./index.html) is found in the main folder
 
 ### From a browser (development environment)
 From the main project folder run 
